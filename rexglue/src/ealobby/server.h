@@ -23,6 +23,7 @@
 #include "ealobby/aries.h"
 #include "ealobby/locker.h"
 #include "ealobby/news.h"
+#include "ealobby/rankings.h"
 
 namespace ealobby {
 
@@ -49,6 +50,11 @@ struct Options {
   // The news (news.h): the latest release of this GitHub repository, served
   // beside the Locker. Empty: none.
   std::string news_repo;
+  // Online rankings (rankings.h): the directory their files are kept in.
+  // Empty: none - the ranking table stays empty, as before.
+  std::string rankings_dir;
+  // Player Match series count toward the rankings too, not only Ranked ones.
+  bool rank_unranked = false;
 };
 
 class Server {
@@ -92,6 +98,9 @@ class Server {
     std::vector<uint8_t> in;
     std::vector<uint8_t> out;
     bool close_when_sent = false;  // kHttp: one request, one answer
+    // When it last asked for a statistics view (sviw): the Burnout Clips
+    // screens do before their snapshots, which are then of the clips.
+    std::chrono::steady_clock::time_point clips_asked{};
   };
 
   SocketHandle Listen(uint16_t port);
@@ -145,6 +154,10 @@ class Server {
   SocketHandle locker_listener_ = -1;
   std::unique_ptr<Locker> locker_;
   std::unique_ptr<News> news_;
+  std::unique_ptr<Rankings> rankings_;
+  // The Records screen's snapshot (snap) of a board, answered as LobbyRank's
+  // +snp rows.
+  void SendStandings(Connection& connection, const Fields& asked, int board);
   // Login keys (LKEY) handed out, and the persona each went to: the Locker's
   // requests carry the key.
   std::map<std::string, std::string> lkeys_;
